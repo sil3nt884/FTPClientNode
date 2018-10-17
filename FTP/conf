@@ -1,0 +1,6 @@
+host="127.0.0.1"
+port=21
+username="ricky.luu"
+password="marcopolo123"
+remoteFileName="testfile.txt"
+Loca1FileName="testfile.txt"
