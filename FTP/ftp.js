@@ -5,6 +5,8 @@ let pass  = require("./Commands/pass");
 let stor = require("./Commands/stor");
 let consolereader = require("./Console/consolereader");
 let dele = require("./Commands/dele");
+let retr = require("./Commands/retr");
+
 
 console.log("Welcome to my simple FTP client \n");
 config.settings.then((settings) => {
@@ -18,15 +20,29 @@ config.settings.then((settings) => {
             "3.download\n");
         consolereader.readLine().then((selector) => {
             switch (selector) {
+                default:
+                    console.log("no selection found for "+selector);
+                    break;
                 case '1':
                     storeFile(settings.remoteFileName, socket)
                     break;
                 case '2':
                     deleteFile(settings.remoteFileName, socket)
                     break;
+                case '3':
+                    downloadFile(settings.remoteFileName, socket);
+                    break;
             }
             socket.on('data', (data) => {
-                handleEvent(data, settings);
+
+                console.log(selector)
+                if (selector == '1') {
+                    handleStore(data, settings);
+                }
+                if (selector == '3'){
+                    console.log("attempting to download")
+                    handleRetr(data, settings);
+                }
             })
         });
     })
@@ -52,7 +68,15 @@ function storeFile(fileName, socket) {
     }
 }
 
-function handleEvent(data,settings) {
+function downloadFile(fileName, socket) {
+    let commands = retr.send(fileName);
+    for (let i =0; i<commands.length; i++){
+        socket.write(commands[i]);
+    }
+
+}
+
+function handleStore(data,settings) {
     console.log(data.toString());
     if (data.includes("227")){
         let p1 =parseInt(data.toString().replace(new RegExp("^ *(.*\\b(?:227)\\b.*) *$"), "g").split(",")[4]);
@@ -62,3 +86,12 @@ function handleEvent(data,settings) {
     }
 }
 
+function handleRetr(data,settings) {
+    console.log(data.toString());
+    if (data.includes("227")){
+        let p1 =parseInt(data.toString().replace(new RegExp("^ *(.*\\b(?:227)\\b.*) *$"), "g").split(",")[4]);
+        let p2 =parseInt((data.toString().replace(new RegExp("^ *(.*\\b(?:227)\\b.*) *$"), "g").split(",")[5].replace(")", "")));
+        let port  =(p1*256+ p2);
+        retr.getFile(port, settings.host, settings.localFileName);
+    }
+}
